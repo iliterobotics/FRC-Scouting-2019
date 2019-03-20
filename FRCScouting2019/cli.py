@@ -161,8 +161,8 @@ def get_match_statistics(match_number):
     team_numbers = matches[match_number-1]
     red_teams = team_numbers[0:3]
     blue_teams = team_numbers[3:7]
-    # red_score, blue_score = predict_match_score(red_teams, blue_teams)
-    print('------RED:---------')
+    red_score, blue_score = predict_match_score(list(map(lambda x: teams[x], red_teams)), list(map(lambda x: teams[x], blue_teams)))
+    print('------RED: ' + str(red_score) + '---------')
     for team_num in red_teams: 
         print('Team: ' + str(team_num))
         try: 
@@ -176,7 +176,7 @@ def get_match_statistics(match_number):
         print('\tHatches: ' + str(running_hatch_avg))
         print('\tCargo: ' + str(running_cargo_avg))
         print('\tClimb: ' + str(running_end_game_avg))
-    print('------BLUE:---------')
+    print('------BLUE: ' + str(blue_score) + '---------')
     for team_num in blue_teams: 
         print('Team: ' + str(team_num))
         try: 

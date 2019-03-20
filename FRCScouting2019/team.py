@@ -152,7 +152,7 @@ def predict_match_score(red_teams, blue_teams):
     # TODO: Use variance to create a confidence interval of which alliance
     # will win the match
     for team in red_teams:
-        red_score += team.total_contribution_mean
+        red_score += team.total_contribution_mean()
     for team in blue_teams:
-        blue_score += team.total_contribution_mean
+        blue_score += team.total_contribution_mean()
     return (red_score, blue_score)
