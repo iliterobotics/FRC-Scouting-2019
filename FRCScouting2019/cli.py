@@ -8,6 +8,8 @@ from pprint import pprint
 from FRCScouting2019.team import Team
 from FRCScouting2019.team import predict_match_score
 import statistics
+import tbapy
+import FRCScouting2019.constants as Constants
 
 teams = {}
 matches = []
@@ -23,7 +25,7 @@ def clear_team_data():
 
 @cli.command
 def clear_schedule():
-    matches = []
+    matches = {}
 
 @cli.command()
 @click.argument('input_path', type=click.File())
@@ -64,13 +66,47 @@ def export_csv(output_path):
 
 @cli.command()
 @click.argument('input_path', type=click.File())
-def import_match_schedule(input_path):
+def import_match_schedule_csv(input_path):
     next(input_path)
     reader = csv.reader(input_path)
     for row in reader:
         match_number = int(row[0])
         team_numbers = list(map(lambda x: int(x), row[1:7]))
-        matches.append(team_numbers)
+        matches[match_number-1] = team_numbers
+
+@cli.command()
+def import_match_schedule_tba():
+    """Import the match schedule from The Blue Alliance. Requires an internet connection."""
+    tba = tbapy.TBA(Constants.TBA_API_KEY)
+
+    # Figure out how many qual matches in the tournament to preallocate array
+    tba_match_keys = tba.event_matches(Constants.EVENT_KEY, keys=True)
+    num_qual_matches = len(list(filter(lambda x: x.startswith(Constants.EVENT_KEY + "_qm"), tba_match_keys)))
+    matches = [None] * num_qual_matches
+
+    # Get match schedule
+    tba_matches = tba.event_matches(Constants.EVENT_KEY, simple=True)
+    for match in tba_matches:
+        if match.comp_level == 'qm':
+            team_numbers = []
+            team_numbers = team_numbers + list(map(lambda x: int(x[3:]), match.alliances['red']['team_keys']))
+            team_numbers = team_numbers + list(map(lambda x: int(x[3:]), match.alliances['red']['surrogate_team_keys']))
+            team_numbers = team_numbers + list(map(lambda x: int(x[3:]), match.alliances['blue']['team_keys']))
+            team_numbers = team_numbers + list(map(lambda x: int(x[3:]), match.alliances['blue']['surrogate_team_keys']))
+            matches[match.match_number-1] = team_numbers
+
+    # Print match schedule
+    view = input('Successfully imported {num_qual_matches} matches. View schedule (Y\\N)? ')
+    if (view == 'Y'):
+        # TODO: Make this prettier
+        for match_number in range(0, num_qual_matches):
+            print(match_number+1, 
+                matches[match_number][0], 
+                matches[match_number][1], 
+                matches[match_number][2], 
+                matches[match_number][3], 
+                matches[match_number][4], 
+                matches[match_number][5])
 
 @cli.command()
 @click.argument('match_number', type=click.INT)
