@@ -11,7 +11,7 @@ setuptools.setup(
     description="Python CLI Application for processing exported scouting data from Airtable",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/knufire/FRC-Scouting-2019",
+    url="https://github.com/iliterobotics/FRC-Scouting-2019",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
