@@ -95,15 +95,16 @@ def import_match_schedule_tba():
     # Print match schedule
     view = input('Successfully imported {num_qual_matches} matches. View schedule (Y\\N)? ')
     if (view == 'Y'):
-        # TODO: Make this prettier
+        print('Match\tRed  \t\t\tBlue')
         for match_number in range(0, num_qual_matches):
-            print(match_number+1, 
+            print('{:2}\t{:4}  {:4}  {:4}\t{:4}  {:4}  {:4}'.format(
+                match_number+1,
                 matches[match_number][0], 
                 matches[match_number][1], 
                 matches[match_number][2], 
                 matches[match_number][3], 
                 matches[match_number][4], 
-                matches[match_number][5])
+                matches[match_number][5]))
 
 @cli.command()
 @click.argument('match_number', type=click.INT)
