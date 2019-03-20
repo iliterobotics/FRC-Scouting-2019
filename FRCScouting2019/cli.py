@@ -10,9 +10,10 @@ from FRCScouting2019.team import predict_match_score
 import statistics
 import tbapy
 import FRCScouting2019.constants as Constants
+from airtable import Airtable
 
 teams = {}
-matches = []
+matches = {}
 
 
 @shell(prompt=' > ', intro=pyfiglet.figlet_format("ILITE Scouting"))
@@ -23,7 +24,7 @@ def cli():
 def clear_team_data():
     teams = {}
 
-@cli.command
+@cli.command()
 def clear_schedule():
     matches = {}
 
@@ -50,6 +51,50 @@ def import_csv(input_path):
                                            sandstorm_attempt,
                                            sandstorm_success, end_game)
 
+@cli.command()
+def import_airtable():
+    """Import scouting data directly from Airtable. Requires an internet connection."""
+    # Team number in the match data table are record ids in the team data table. We'll build a dict so=
+    # we can decode the id back to a team number
+    airtable = Airtable(Constants.AIRTABLE_BASE_KEY, 'Team Data', api_key=Constants.AIRTABLE_API_KEY)
+    team_records = airtable.get_all(fields=['Name'])
+    id_to_team_number = {}
+    for record in team_records: 
+        try:
+            id_to_team_number[record['id']] = int(record['fields']['Name'])
+        except:
+            pass
+    
+    # Get all the data from the match data table and parse into Team objects
+    airtable = Airtable(Constants.AIRTABLE_BASE_KEY, 'Match Data', api_key=Constants.AIRTABLE_API_KEY)
+    records = airtable.get_all()
+    for record in records:
+        record = record['fields']
+        team_id = record['Team Number'][0]
+        team_number = id_to_team_number[team_id]
+        match_number = record['Match Number']
+        starting_location = record['Robot Starting Position']
+        try:
+            line_crossed = record['Cross Hab Line in Sandstorm']
+        except:
+            line_crossed = False
+        sandstorm_attempt = record['Sandstorm - First game piece']
+        sandstorm_success = record['Sandstorm - Placement of first game piece']
+        try:
+            hatches = record['Number of Hatches']
+        except:
+            hatches = 0
+        try:
+            cargo = record['Number of Cargo']
+        except:
+            cargo = 0
+        end_game = int(re.search(r'\d+', record['End Game?']).group()) if re.search(r'\d+', record['End Game?']).group() else 0
+        if team_number not in teams.keys():
+            teams[team_number] = Team(team_number)
+        teams[team_number]._add_match_data(match_number, starting_location,
+                                           line_crossed, hatches, cargo,
+                                           sandstorm_attempt,
+                                           sandstorm_success, end_game)
 
 @cli.command()
 @click.argument('output_path', type=click.Path(exists=False))
@@ -67,6 +112,8 @@ def export_csv(output_path):
 @cli.command()
 @click.argument('input_path', type=click.File())
 def import_match_schedule_csv(input_path):
+    """Import match schedule from a csv file. 
+    Each row should have the match number, the three red teams, then the three blue teams"""
     next(input_path)
     reader = csv.reader(input_path)
     for row in reader:
@@ -85,6 +132,7 @@ def import_match_schedule_tba():
     for match in tba_matches:
         if match.comp_level == 'qm':
             team_numbers = []
+            # Team keys come in the format 'frcXXXX', so we'll parse just the number out
             team_numbers += list(map(lambda x: int(x[3:]), match.alliances['red']['team_keys']))
             team_numbers += list(map(lambda x: int(x[3:]), match.alliances['red']['surrogate_team_keys']))
             team_numbers += list(map(lambda x: int(x[3:]), match.alliances['blue']['team_keys']))
@@ -93,9 +141,9 @@ def import_match_schedule_tba():
             num_qual_matches += 1
 
     # Print match schedule
-    view = input('Successfully imported {num_qual_matches} matches. View schedule (Y\\N)? ')
+    view = input('\tSuccessfully imported %d matches. View schedule (Y\\N)? ' % num_qual_matches)
     if (view == 'Y'):
-        # TODO: Make this prettier
+        # TODO: Make this print prettier
         for match_number in range(0, num_qual_matches):
             print(match_number+1, 
                 matches[match_number][0], 
@@ -108,6 +156,7 @@ def import_match_schedule_tba():
 @cli.command()
 @click.argument('match_number', type=click.INT)
 def get_match_statistics(match_number):
+    """Get statistics for a specific match"""
     team_numbers = matches[match_number-1]
     red_teams = team_numbers[0:3]
     blue_teams = team_numbers[3:7]
