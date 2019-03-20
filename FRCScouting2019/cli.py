@@ -79,11 +79,6 @@ def import_match_schedule_tba():
     """Import the match schedule from The Blue Alliance. Requires an internet connection."""
     tba = tbapy.TBA(Constants.TBA_API_KEY)
 
-    # Figure out how many qual matches in the tournament to preallocate array
-    tba_match_keys = tba.event_matches(Constants.EVENT_KEY, keys=True)
-    num_qual_matches = len(list(filter(lambda x: x.startswith(Constants.EVENT_KEY + "_qm"), tba_match_keys)))
-    matches = [None] * num_qual_matches
-
     # Get match schedule
     tba_matches = tba.event_matches(Constants.EVENT_KEY, simple=True)
     for match in tba_matches:
