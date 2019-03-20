@@ -80,15 +80,17 @@ def import_match_schedule_tba():
     tba = tbapy.TBA(Constants.TBA_API_KEY)
 
     # Get match schedule
+    num_qual_matches = 0
     tba_matches = tba.event_matches(Constants.EVENT_KEY, simple=True)
     for match in tba_matches:
         if match.comp_level == 'qm':
             team_numbers = []
-            team_numbers = team_numbers + list(map(lambda x: int(x[3:]), match.alliances['red']['team_keys']))
-            team_numbers = team_numbers + list(map(lambda x: int(x[3:]), match.alliances['red']['surrogate_team_keys']))
-            team_numbers = team_numbers + list(map(lambda x: int(x[3:]), match.alliances['blue']['team_keys']))
-            team_numbers = team_numbers + list(map(lambda x: int(x[3:]), match.alliances['blue']['surrogate_team_keys']))
+            team_numbers += list(map(lambda x: int(x[3:]), match.alliances['red']['team_keys']))
+            team_numbers += list(map(lambda x: int(x[3:]), match.alliances['red']['surrogate_team_keys']))
+            team_numbers += list(map(lambda x: int(x[3:]), match.alliances['blue']['team_keys']))
+            team_numbers += list(map(lambda x: int(x[3:]), match.alliances['blue']['surrogate_team_keys']))
             matches[match.match_number-1] = team_numbers
+            num_qual_matches += 1
 
     # Print match schedule
     view = input('Successfully imported {num_qual_matches} matches. View schedule (Y\\N)? ')
