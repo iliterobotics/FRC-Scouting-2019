@@ -44,8 +44,13 @@ def handle_command(command, channel):
     # Finds and executes the given command, filling in response
     response = None
     # This is where you start to implement more commands!
-    if command.startswith(EXAMPLE_COMMAND):
-        response = build_match_statistics_string(70)
+    if 'match' in command:
+        try:
+            match_number = int(re.search(r'\d+', command).group())
+            response = build_match_statistics_string(match_number)
+        except:
+            response = "I couldn't quite figure out what match number you were asking for, please try rephrasing."
+        
 
     # Sends the response back to the channel
     slack_client.api_call(
