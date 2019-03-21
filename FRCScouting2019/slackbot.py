@@ -3,6 +3,7 @@ import time
 import re
 from slackclient import SlackClient
 from FRCScouting2019.constants import SLACK_BOT_OAUTH_TOKEN
+from FRCScouting2019.tournament import build_match_statistics_string
 
 RTM_READ_DELAY = 1
 EXAMPLE_COMMAND = "do"
@@ -44,7 +45,7 @@ def handle_command(command, channel):
     response = None
     # This is where you start to implement more commands!
     if command.startswith(EXAMPLE_COMMAND):
-        response = "Sure...write some more code then I can do that!"
+        response = build_match_statistics_string(70)
 
     # Sends the response back to the channel
     slack_client.api_call(

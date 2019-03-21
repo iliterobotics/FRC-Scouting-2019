@@ -3,7 +3,7 @@
 import csv
 import re
 import sys
-import statistics
+
 import time
 from pprint import pprint
 from multiprocessing import Process
@@ -17,12 +17,10 @@ from click_shell import shell
 
 # 1st party packages
 import FRCScouting2019.constants as Constants
+import FRCScouting2019.tournament as Tournament
 from FRCScouting2019.team import Team
-from FRCScouting2019.team import predict_match_score
-from FRCScouting2019.slackbot import start_slack_bot
 
-teams = {}
-matches = {}
+from FRCScouting2019.slackbot import start_slack_bot
 
 
 @shell(prompt=' > ', intro=pyfiglet.figlet_format("ILITE Scouting"))
@@ -53,9 +51,7 @@ def import_csv(input_path):
         hatches = int(row[4]) if row[4] else 0
         cargo = int(row[5]) if row[5] else 0
         end_game = int(re.search(r'\d+', row[13]).group()) if re.search(r'\d+', row[13]).group() else 0
-        if team_number not in teams.keys():
-            teams[team_number] = Team(team_number)
-        teams[team_number]._add_match_data(match_number, starting_location,
+        Tournament.add_match_data(team_number, match_number, starting_location,
                                            line_crossed, hatches, cargo,
                                            sandstorm_attempt,
                                            sandstorm_success, end_game)
@@ -98,9 +94,7 @@ def import_airtable():
         except:
             cargo = 0
         end_game = int(re.search(r'\d+', record['End Game?']).group()) if re.search(r'\d+', record['End Game?']).group() else 0
-        if team_number not in teams.keys():
-            teams[team_number] = Team(team_number)
-        teams[team_number]._add_match_data(match_number, starting_location,
+        Tournament.add_match_data(team_number, match_number, starting_location,
                                            line_crossed, hatches, cargo,
                                            sandstorm_attempt,
                                            sandstorm_success, end_game)
@@ -109,14 +103,7 @@ def import_airtable():
 @click.argument('output_path', type=click.Path(exists=False))
 def export_csv(output_path):
     """Export a CSV file with aggregate statistics for each team"""
-    columns = list(
-        filter(lambda x: not x.startswith('_'), Team.__dict__.keys()))
-    with open(output_path, 'w+', newline='') as csv_file:
-        writer = csv.writer(csv_file)
-        writer.writerow(['Team Number'] + columns)
-        for number, team in teams.items():
-            results = list(map(lambda x: Team.__dict__[x](team), columns))
-            writer.writerow([number] + results)
+    Tournament.export_csv(output_path)
 
 @cli.command()
 @click.argument('input_path', type=click.File())
@@ -128,7 +115,7 @@ def import_match_schedule_csv(input_path):
     for row in reader:
         match_number = int(row[0])
         team_numbers = list(map(lambda x: int(x), row[1:7]))
-        matches[match_number-1] = team_numbers
+        Tournament.add_match_to_schedule(match_number, team_numbers)
 
 @cli.command()
 def import_match_schedule_tba():
@@ -146,71 +133,23 @@ def import_match_schedule_tba():
             team_numbers += list(map(lambda x: int(x[3:]), match.alliances['red']['surrogate_team_keys']))
             team_numbers += list(map(lambda x: int(x[3:]), match.alliances['blue']['team_keys']))
             team_numbers += list(map(lambda x: int(x[3:]), match.alliances['blue']['surrogate_team_keys']))
-            matches[match.match_number-1] = team_numbers
+            Tournament.add_match_to_schedule(match.match_number, team_numbers)
             num_qual_matches += 1
 
     # Print match schedule
     view = input('\tSuccessfully imported %d matches. View schedule (Y\\N)? ' % num_qual_matches)
     if (view == 'Y'):
-        print('Match\tRed  \t\t\tBlue')
-        for match_number in range(0, num_qual_matches):
-            print('{:2}\t{:4}  {:4}  {:4}\t{:4}  {:4}  {:4}'.format(
-                match_number+1,
-                matches[match_number][0], 
-                matches[match_number][1], 
-                matches[match_number][2], 
-                matches[match_number][3], 
-                matches[match_number][4], 
-                matches[match_number][5]))
+        Tournament.print_match_schedule()
+
 
 @cli.command()
 @click.argument('match_number', type=click.INT)
 def get_match_statistics(match_number):
     """Get statistics for a specific match"""
-    output = _build_match_statistics_string(match_number)
+    output = Tournament.build_match_statistics_string(match_number)
     print(output)
-
-def _build_match_statistics_string(match_number):
-    team_numbers = matches[match_number-1]
-    red_teams = team_numbers[0:3]
-    blue_teams = team_numbers[3:7]
-    red_score, blue_score = predict_match_score(list(map(lambda x: teams[x], red_teams)), list(map(lambda x: teams[x], blue_teams)))
-    red_score, blue_score = predict_match_score(list(map(lambda x: teams[x], red_teams)), list(map(lambda x: teams[x], blue_teams)))
-    output = ''
-    output += ('------RED: ' + str(red_score) + '---------\n')
-    for team_num in red_teams: 
-        output += ('Team: ' + str(team_num) + '\n')
-        try: 
-            team = teams[team_num]
-        except KeyError:
-            team = Team(0)
-            team._add_match_data(0,0,0,0,0,0,0,0)
-        running_hatch_avg = statistics.mean(team.hatches_scored[-4:])
-        running_cargo_avg = statistics.mean(team.cargo_scored[-4:])
-        running_end_game_avg = statistics.mean(team.end_game[-4:])
-        output += ('\tHatches: ' + str(running_hatch_avg) + '\n')
-        output += ('\tCargo: ' + str(running_cargo_avg) + '\n')
-        output += ('\tClimb: ' + str(running_end_game_avg) + '\n')
-    output += ('------BLUE: ' + str(blue_score) + '---------\n')
-    for team_num in blue_teams: 
-        output += ('Team: ' + str(team_num) + '\n')
-        try: 
-            team = teams[team_num]
-        except KeyError:
-            team = Team(0)
-            team._add_match_data(0,0,0,0,0,0,0,0)
-        running_hatch_avg = statistics.mean(team.hatches_scored[-4:])
-        running_cargo_avg = statistics.mean(team.cargo_scored[-4:])
-        running_end_game_avg = statistics.mean(team.end_game[-4:])
-        output += ('\tHatches: ' + str(running_hatch_avg) + '\n')
-        output += ('\tCargo: ' + str(running_cargo_avg) + '\n')
-        output += ('\tClimb: ' + str(running_end_game_avg) + '\n')
-    return output
-
 
 @cli.command()
 def start_slack_bot_server():
-    p = Process(target=start_slack_bot)
-    p.start()
-    time.sleep(1) # Hacky way to make the prompt appear after the bot has started
+    start_slack_bot()
         
