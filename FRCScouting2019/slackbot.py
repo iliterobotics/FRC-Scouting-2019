@@ -6,7 +6,6 @@ from FRCScouting2019.constants import SLACK_BOT_OAUTH_TOKEN
 from FRCScouting2019.tournament import build_match_statistics_string
 
 RTM_READ_DELAY = 1
-EXAMPLE_COMMAND = "do"
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 
 slack_client = SlackClient(SLACK_BOT_OAUTH_TOKEN)
@@ -39,7 +38,7 @@ def handle_command(command, channel):
         Executes bot command if the command is known
     """
     # Default response is help text for the user
-    default_response = "Not sure what you mean. Try *{}*.".format(EXAMPLE_COMMAND)
+    default_response = "Not sure what you mean. Try again."
 
     # Finds and executes the given command, filling in response
     response = None
@@ -62,7 +61,7 @@ def handle_command(command, channel):
 
 def start_slack_bot():
     if slack_client.rtm_connect(with_team_state=False):
-        print("Starter Bot connected and running!")
+        print("Scouting Bot connected and running!")
         # Read bot's user ID by calling Web API method `auth.test`
         global starterbot_id
         starterbot_id = slack_client.api_call("auth.test")["user_id"]
