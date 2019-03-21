@@ -1,16 +1,25 @@
-from click_shell import shell
-import click
-import pyfiglet
+
+# Built-ins
 import csv
 import re
 import sys
+import statistics
+import time
 from pprint import pprint
+from multiprocessing import Process
+
+# 3rd party packages
+import tbapy
+import click
+import pyfiglet
+from airtable import Airtable
+from click_shell import shell
+
+# 1st party packages
+import FRCScouting2019.constants as Constants
 from FRCScouting2019.team import Team
 from FRCScouting2019.team import predict_match_score
-import statistics
-import tbapy
-import FRCScouting2019.constants as Constants
-from airtable import Airtable
+from FRCScouting2019.slackbot import start_slack_bot
 
 teams = {}
 matches = {}
@@ -158,13 +167,19 @@ def import_match_schedule_tba():
 @click.argument('match_number', type=click.INT)
 def get_match_statistics(match_number):
     """Get statistics for a specific match"""
+    output = _build_match_statistics_string(match_number)
+    print(output)
+
+def _build_match_statistics_string(match_number):
     team_numbers = matches[match_number-1]
     red_teams = team_numbers[0:3]
     blue_teams = team_numbers[3:7]
     red_score, blue_score = predict_match_score(list(map(lambda x: teams[x], red_teams)), list(map(lambda x: teams[x], blue_teams)))
-    print('------RED: ' + str(red_score) + '---------')
+    red_score, blue_score = predict_match_score(list(map(lambda x: teams[x], red_teams)), list(map(lambda x: teams[x], blue_teams)))
+    output = ''
+    output += ('------RED: ' + str(red_score) + '---------\n')
     for team_num in red_teams: 
-        print('Team: ' + str(team_num))
+        output += ('Team: ' + str(team_num) + '\n')
         try: 
             team = teams[team_num]
         except KeyError:
@@ -173,12 +188,12 @@ def get_match_statistics(match_number):
         running_hatch_avg = statistics.mean(team.hatches_scored[-4:])
         running_cargo_avg = statistics.mean(team.cargo_scored[-4:])
         running_end_game_avg = statistics.mean(team.end_game[-4:])
-        print('\tHatches: ' + str(running_hatch_avg))
-        print('\tCargo: ' + str(running_cargo_avg))
-        print('\tClimb: ' + str(running_end_game_avg))
-    print('------BLUE: ' + str(blue_score) + '---------')
+        output += ('\tHatches: ' + str(running_hatch_avg) + '\n')
+        output += ('\tCargo: ' + str(running_cargo_avg) + '\n')
+        output += ('\tClimb: ' + str(running_end_game_avg) + '\n')
+    output += ('------BLUE: ' + str(blue_score) + '---------\n')
     for team_num in blue_teams: 
-        print('Team: ' + str(team_num))
+        output += ('Team: ' + str(team_num) + '\n')
         try: 
             team = teams[team_num]
         except KeyError:
@@ -187,7 +202,15 @@ def get_match_statistics(match_number):
         running_hatch_avg = statistics.mean(team.hatches_scored[-4:])
         running_cargo_avg = statistics.mean(team.cargo_scored[-4:])
         running_end_game_avg = statistics.mean(team.end_game[-4:])
-        print('\tHatches: ' + str(running_hatch_avg))
-        print('\tCargo: ' + str(running_cargo_avg))
-        print('\tClimb: ' + str(running_end_game_avg))
+        output += ('\tHatches: ' + str(running_hatch_avg) + '\n')
+        output += ('\tCargo: ' + str(running_cargo_avg) + '\n')
+        output += ('\tClimb: ' + str(running_end_game_avg) + '\n')
+    return output
+
+
+@cli.command()
+def start_slack_bot_server():
+    p = Process(target=start_slack_bot)
+    p.start()
+    time.sleep(1) # Hacky way to make the prompt appear after the bot has started
         
