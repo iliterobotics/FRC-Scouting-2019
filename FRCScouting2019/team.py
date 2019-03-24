@@ -17,6 +17,16 @@ class Team:
         self.sandstorm_attempts = []
         self.sandstorm_successes = []
         self.end_game = []
+    
+    def __filter_data(self, num_matches):
+        self.match_numbers = self.match_numbers[-num_matches:]
+        self.starting_locations = self.starting_locations[-num_matches:]
+        self.line_crossed = self.line_crossed[-num_matches:]
+        self.hatches_scored = self.hatches_scored[-num_matches:]
+        self.cargo_scored = self.cargo_scored[-num_matches:]
+        self.sandstorm_attempts = self.sandstorm_attempts[-num_matches:]
+        self.sandstorm_successes = self.sandstorm_successes[-num_matches:]
+        self.end_game = self.end_game[-num_matches:]
 
     def _add_match_data(self, match_number, starting_location, line_crossed,
                         hatches_scored, cargo_scored, sandstorm_attempt,
@@ -65,7 +75,7 @@ class Team:
         for i in range(0, len(self.sandstorm_attempts)):
             if self.sandstorm_attempts[i] is not 'Nothing attempted':
                 attempts += 1
-                if self.sandstorm_successes is location:
+                if self.sandstorm_successes[i] == location:
                     successes += 1
         return successes / attempts
 
@@ -85,16 +95,11 @@ class Team:
                 score += 3
             else:  # Started on HAB 2
                 score += 6
-        if self.sandstorm_successes is not 'Failed to score':
-            if self.sandstorm_attempts is 'Cargo':
-                score += 3
-            else:  # Scored a hatch
-                if self.sandstorm_successes is 'Cargoship':
+        if self.sandstorm_attempts[matchIndex] == 'Hatch':
+                if self.sandstorm_successes[matchIndex] == 'Cargoship':
                     # Assuming they placed it on the front,
-                    # effectively scoring 5 pts
-                    score += 5
-                else:
-                    score += 2
+                    # effectively scoring the cargo
+                    score += 3
         score += self.hatches_scored[matchIndex] * 2
         score += self.cargo_scored[matchIndex] * 3
         return score
@@ -126,11 +131,8 @@ class Team:
             contributions.append(self._total_contribution(i))
         return statistics.pvariance(contributions)
 
-    def left_start_percentage(self):
-        return self.starting_locations.count('Left Mid level') / len(self.starting_locations)
-
-    def right_start_percentage(self):
-        return self.starting_locations.count('Right Mid level') / len(self.starting_locations)
+    def high_start_percentage(self):
+        return (self.starting_locations.count('Left Mid Level') + self.starting_locations.count('Right Mid level'))/ len(self.starting_locations)
 
     def low_start_percentage(self):
         return self.starting_locations.count('Hab') / len(self.starting_locations)

@@ -79,5 +79,6 @@ def export_csv(output_path):
         writer = csv.writer(csv_file)
         writer.writerow(['Team Number'] + columns)
         for number, team in teams.items():
+            team._Team__filter_data(6)
             results = list(map(lambda x: Team.__dict__[x](team), columns))
             writer.writerow([number] + results)
