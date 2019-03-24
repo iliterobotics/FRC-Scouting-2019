@@ -73,7 +73,7 @@ def import_airtable():
     # Get all the data from the match data table and parse into Team objects
     airtable = Airtable(Constants.AIRTABLE_BASE_KEY, 'Match Data', api_key=Constants.AIRTABLE_API_KEY)
     records = airtable.get_all()
-    for record in records:
+    for record in sorted(records, key=lambda x: x['fields']['Match Number']):
         record = record['fields']
         team_id = record['Team Number'][0]
         team_number = id_to_team_number[team_id]
