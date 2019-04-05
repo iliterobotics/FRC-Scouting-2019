@@ -4,6 +4,7 @@ import re
 from slackclient import SlackClient
 from FRCScouting2019.constants import SLACK_BOT_OAUTH_TOKEN
 from FRCScouting2019.tournament import build_match_statistics_string
+from FRCScouting2019.tournament import import_airtable
 
 RTM_READ_DELAY = 1
 MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
@@ -46,6 +47,7 @@ def handle_command(command, channel):
     if 'match' in command:
         try:
             match_number = int(re.search(r'\d+', command).group())
+            import_airtable()
             response = build_match_statistics_string(match_number)
         except:
             response = "I couldn't quite figure out what match number you were asking for, please try rephrasing."

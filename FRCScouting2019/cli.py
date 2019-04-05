@@ -12,7 +12,6 @@ from multiprocessing import Process
 import tbapy
 import click
 import pyfiglet
-from airtable import Airtable
 from click_shell import shell
 
 # 1st party packages
@@ -59,45 +58,7 @@ def import_csv(input_path):
 @cli.command()
 def import_airtable():
     """Import scouting data directly from Airtable. Requires an internet connection."""
-    # Team number in the match data table are record ids in the team data table. We'll build a dict so=
-    # we can decode the id back to a team number
-    airtable = Airtable(Constants.AIRTABLE_BASE_KEY, 'Team Data', api_key=Constants.AIRTABLE_API_KEY)
-    team_records = airtable.get_all(fields=['Name'])
-    id_to_team_number = {}
-    for record in team_records: 
-        try:
-            id_to_team_number[record['id']] = int(record['fields']['Name'])
-        except:
-            pass
-    
-    # Get all the data from the match data table and parse into Team objects
-    airtable = Airtable(Constants.AIRTABLE_BASE_KEY, 'Match Data', api_key=Constants.AIRTABLE_API_KEY)
-    records = airtable.get_all()
-    for record in sorted(records, key=lambda x: x['fields']['Match Number']):
-        record = record['fields']
-        team_id = record['Team Number'][0]
-        team_number = id_to_team_number[team_id]
-        match_number = record['Match Number']
-        starting_location = record['Robot Starting Position']
-        try:
-            line_crossed = record['Cross Hab Line in Sandstorm']
-        except:
-            line_crossed = False
-        sandstorm_attempt = record['Sandstorm - First game piece']
-        sandstorm_success = record['Sandstorm - Placement of first game piece']
-        try:
-            hatches = record['Number of Hatches']
-        except:
-            hatches = 0
-        try:
-            cargo = record['Number of Cargo']
-        except:
-            cargo = 0
-        end_game = int(re.search(r'\d+', record['End Game?']).group()) if re.search(r'\d+', record['End Game?']).group() else 0
-        Tournament.add_match_data(team_number, match_number, starting_location,
-                                           line_crossed, hatches, cargo,
-                                           sandstorm_attempt,
-                                           sandstorm_success, end_game)
+    Tournament.import_airtable()
 
 @cli.command()
 @click.argument('output_path', type=click.Path(exists=False))
