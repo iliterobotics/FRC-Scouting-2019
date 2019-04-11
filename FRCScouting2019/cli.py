@@ -19,7 +19,7 @@ import FRCScouting2019.constants as Constants
 import FRCScouting2019.tournament as Tournament
 from FRCScouting2019.team import Team
 
-from FRCScouting2019.slackbot import start_slack_bot
+from FRCScouting2019.slackbot import start_slack_bot, stop_slack_bot
 
 
 @shell(prompt=' > ', intro=pyfiglet.figlet_format("ILITE Scouting"))
@@ -113,4 +113,7 @@ def get_match_statistics(match_number):
 @cli.command()
 def start_slack_bot_server():
     start_slack_bot()
-        
+
+@cli.command()
+def stop_slack_bot_server():
+    stop_slack_bot()

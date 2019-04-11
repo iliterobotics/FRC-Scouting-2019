@@ -1,6 +1,7 @@
 import os
 import time
 import re
+import threading
 from slackclient import SlackClient
 from FRCScouting2019.constants import SLACK_BOT_OAUTH_TOKEN
 from FRCScouting2019.tournament import build_match_statistics_string
@@ -11,6 +12,7 @@ MENTION_REGEX = "^<@(|[WU].+?)>(.*)"
 
 slack_client = SlackClient(SLACK_BOT_OAUTH_TOKEN)
 starterbot_id = None
+slackbot_stop_event = threading.Event()
 
 def parse_bot_commands(slack_events):
     """
@@ -60,17 +62,25 @@ def handle_command(command, channel):
         text=response or default_response
     )
 
-
 def start_slack_bot():
+    slackbot_stop_event.clear()
+    t = threading.Thread(target=_start_slack_bot, args=(slackbot_stop_event,))
+    t.start()
+
+def stop_slack_bot():
+    slackbot_stop_event.set()
+
+def _start_slack_bot(stop_event):
     if slack_client.rtm_connect(with_team_state=False):
         print("Scouting Bot connected and running!")
         # Read bot's user ID by calling Web API method `auth.test`
         global starterbot_id
         starterbot_id = slack_client.api_call("auth.test")["user_id"]
-        while True:
+        while not stop_event.wait(RTM_READ_DELAY):
             command, channel = parse_bot_commands(slack_client.rtm_read())
             if command:
                 handle_command(command, channel)
-            time.sleep(RTM_READ_DELAY)
     else:
         print("Connection failed. Exception traceback printed above.")
+    print("Scouting Bot stopped!")
+
