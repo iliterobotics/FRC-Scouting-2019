@@ -36,12 +36,18 @@ def print_match_schedule():
             matches[match_number][4], 
             matches[match_number][5]))
 
+def get_team_object(team_number):
+    try:
+        return teams[team_number]
+    except:
+        team = Team(team_number)
+        team._add_match_data(-1,-1,-1,-1,-1,-1,-1,-1)
+        return team
 def build_match_statistics_string(match_number):
     team_numbers = matches[match_number-1]
     red_teams = team_numbers[0:3]
     blue_teams = team_numbers[3:7]
-    red_score, blue_score = predict_match_score(list(map(lambda x: teams[x], red_teams)), list(map(lambda x: teams[x], blue_teams)))
-    red_score, blue_score = predict_match_score(list(map(lambda x: teams[x], red_teams)), list(map(lambda x: teams[x], blue_teams)))
+    red_score, blue_score = predict_match_score(list(map(lambda x: get_team_object(x), red_teams)), list(map(lambda x: get_team_object(x), blue_teams)))
     output = ''
     output += ('------RED: ' + str(red_score) + '---------\n')
     for team_num in red_teams: 
