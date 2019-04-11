@@ -91,7 +91,7 @@ class Team:
     def _total_contribution_without_climb(self, matchIndex):
         score = 0
         if self.line_crossed[matchIndex]:
-            if self.starting_locations[matchIndex] is 'Hab':
+            if self.starting_locations[matchIndex] is 'Level 1':
                 score += 3
             else:  # Started on HAB 2
                 score += 6
