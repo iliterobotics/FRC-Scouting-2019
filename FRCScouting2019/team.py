@@ -132,10 +132,10 @@ class Team:
         return statistics.pvariance(contributions)
 
     def high_start_percentage(self):
-        return (self.starting_locations.count('Left Mid Level') + self.starting_locations.count('Right Mid level'))/ len(self.starting_locations)
+        return self.starting_locations.count('Level 2') / len(self.starting_locations)
 
     def low_start_percentage(self):
-        return self.starting_locations.count('Hab') / len(self.starting_locations)
+        return self.starting_locations.count('Level 1') / len(self.starting_locations)
 
 
 def predict_match_score(red_teams, blue_teams):
